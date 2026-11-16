@@ -10,7 +10,12 @@ step and no dependencies.
 
 ## Running
 
-Open `index.html` in a browser. It also works from `file://`, since the data is loaded with
+```
+git clone https://github.com/appu-019/live-threat-map
+cd live-threat-map
+```
+
+Then open `index.html` in a browser. It also works from `file://`, since the data is loaded with
 script tags instead of `fetch()`.
 
 Or serve it with GitHub Pages (Settings → Pages → deploy from `main`, root).
