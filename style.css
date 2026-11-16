@@ -1,0 +1,125 @@
+:root {
+  --bg: #0b0d12;
+  --land: #161a23;
+  --border: #262c3a;
+  --text: #d6d9e0;
+  --muted: #7d8494;
+  --accent: #ff4f8b;
+  --sensor: #4fc3f7;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 12px/1.45 ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+}
+
+#map {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.land {
+  fill: var(--land);
+  stroke: var(--border);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.8;
+  stroke-opacity: 0.6;
+}
+
+.origin { fill: var(--accent); }
+
+header, aside, footer {
+  position: fixed;
+  z-index: 1;
+  background: rgba(11, 13, 18, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+header { top: 12px; left: 12px; }
+
+h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: lowercase;
+}
+
+#summary { margin: 4px 0 0; color: var(--muted); }
+
+#feed {
+  left: 12px;
+  bottom: 40px;
+  width: 300px;
+}
+
+#rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#rows li {
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#rows .ip { color: var(--accent); }
+#rows .meta { color: var(--muted); }
+
+#countries-panel {
+  right: 12px;
+  bottom: 40px;
+  width: 210px;
+}
+
+#by-country { width: 100%; border-collapse: collapse; }
+#by-country td { padding: 1px 0; }
+#by-country td.n { text-align: right; color: var(--muted); }
+#by-country .bar {
+  height: 3px;
+  margin-top: 2px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+footer {
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: 10.5px;
+  border: none;
+  background: transparent;
+}
+
+footer a { color: var(--muted); }
+
+@media (max-width: 700px) {
+  #countries-panel { display: none; }
+  #feed { width: auto; right: 12px; }
+}

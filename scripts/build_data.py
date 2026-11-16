@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Regenerate world.js and attacks.js from live public data.
+"""Rebuild data/world.js and data/attacks.js from the upstream sources.
 
-Sources (all real, all public):
-  - malicious IPs : https://github.com/stamparm/ipsum
-  - IP geolocation: https://github.com/sapics/ip-location-db (DB-IP)
-  - country shapes: Natural Earth (public domain)
+  IPs:          https://github.com/stamparm/ipsum
+  geolocation:  https://github.com/sapics/ip-location-db (DB-IP Lite, country level)
+  borders:      Natural Earth 1:110m
 
-Usage:  python3 build_data.py
+Run from anywhere:  python3 scripts/build_data.py
+Standard library only.
 """
-import json, csv, bisect, random, urllib.request, io, datetime
+import json, csv, bisect, random, urllib.request, io, datetime, os
 
 IPSUM = "https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt"
 DBIP  = "https://raw.githubusercontent.com/sapics/ip-location-db/main/dbip-country/dbip-country-ipv4.csv"
 WORLD = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
 MAX_POINTS = 1500
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
 def get(url):
     print("fetching", url)
@@ -25,7 +26,6 @@ def ip2int(s):
 def main():
     random.seed(7)
 
-    # geolocation ranges
     starts, ends, ccs = [], [], []
     for row in csv.reader(io.StringIO(get(DBIP))):
         if len(row) != 3: continue
@@ -35,7 +35,7 @@ def main():
         i = bisect.bisect_right(starts, ipi) - 1
         return ccs[i] if 0 <= i < len(starts) and starts[i] <= ipi <= ends[i] else None
 
-    # country centroids + outlines
+    # Natural Earth label points are better placed than polygon averages
     world = json.loads(get(WORLD))
     cent, names = {}, {}
     for ft in world["features"]:
@@ -51,7 +51,7 @@ def main():
             walk(ft["geometry"]["coordinates"]); lx = sum(xs)/len(xs); ly = sum(ys)/len(ys)
         cent[cc] = (round(ly, 2), round(lx, 2)); names[cc] = p.get("NAME")
 
-    # malicious IPs, most-listed first
+    # most-listed first
     rows = []
     for line in get(IPSUM).splitlines():
         if line.startswith("#") or not line.strip(): continue
@@ -74,11 +74,11 @@ def main():
     feats = [{"n": ft["properties"].get("NAME"), "g": rnd(ft["geometry"]["coordinates"]),
               "t": ft["geometry"]["type"]} for ft in world["features"]]
 
-    with open("world.js", "w") as f:
+    with open(os.path.join(DATA_DIR, "world.js"), "w") as f:
         f.write("window.WORLD=" + json.dumps(feats, separators=(",", ":")) + ";")
     meta = {"generated": datetime.date.today().isoformat(), "source_feed": "stamparm/ipsum",
             "source_geo": "sapics/ip-location-db (DB-IP)", "total_feed_ips": len(rows)}
-    with open("attacks.js", "w") as f:
+    with open(os.path.join(DATA_DIR, "attacks.js"), "w") as f:
         f.write("window.ATTACKS=" + json.dumps(attacks, separators=(",", ":")) +
                 ";\nwindow.ATTACK_META=" + json.dumps(meta) + ";")
     print(f"wrote {len(attacks)} attacks, {len(feats)} countries")

@@ -1,182 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Live Threat Map — real malicious IPs</title>
-<style>
-  :root{ --pink:#ff2e88; --purple:#9d4edd; --cyan:#36e0ff; --ink:#f2e9ff; --ink2:#9f8bc4; }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;background:#05010f;color:var(--ink);
-    font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;overflow:hidden}
-  #stage{position:fixed;inset:0}
-  svg{width:100%;height:100%;display:block}
-  .country{fill:#120a26;stroke:#2a1a4d;stroke-width:.4;vector-effect:non-scaling-stroke}
-  .hud{position:fixed;pointer-events:none;z-index:5}
-  #top{top:0;left:0;right:0;padding:16px 20px;display:flex;justify-content:space-between;
-    align-items:flex-start;gap:14px;
-    background:linear-gradient(#05010fcc,transparent)}
-  h1{font-size:17px;letter-spacing:1px}
-  h1 b{color:var(--pink)}
-  .tag{font-size:11px;color:var(--ink2);margin-top:3px;max-width:60ch;line-height:1.5}
-  .stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-  .stat{background:#140a2b;border:1px solid #2e1b57;border-radius:10px;padding:8px 12px;text-align:right}
-  .stat .n{font-size:20px;font-weight:700;color:var(--cyan)}
-  .stat .l{font-size:9.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:.8px}
-  #feed{bottom:0;left:0;padding:14px 20px;width:380px;max-width:60vw;
-    background:linear-gradient(transparent,#05010fdd);z-index:5}
-  #feed h2{font-size:10px;color:var(--ink2);letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase}
-  .row{font-size:11.5px;padding:3px 0;color:var(--ink);opacity:0;animation:in .4s forwards;white-space:nowrap}
-  .row .ip{color:var(--pink)}
-  .row .co{color:var(--ink2)}
-  @keyframes in{from{opacity:0;transform:translateX(-10px)}to{opacity:.95;transform:none}}
-  #tops{bottom:0;right:0;padding:14px 20px;width:230px;z-index:5;
-    background:linear-gradient(transparent,#05010fdd)}
-  #tops h2{font-size:10px;color:var(--ink2);letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase}
-  .bar{display:flex;align-items:center;gap:8px;font-size:11px;margin:4px 0}
-  .bar .track{flex:1;height:6px;background:#1c0f38;border-radius:3px;overflow:hidden}
-  .bar .fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink))}
-  .bar .cc{width:26px;color:var(--ink2)}
-  .bar .v{width:34px;text-align:right;color:var(--ink2)}
-  #note{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);z-index:5;
-    font-size:9.5px;color:#6b5a90;text-align:center;pointer-events:none}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>live-threat-map</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="stage">
-  <svg id="map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid slice">
-    <defs>
-      <radialGradient id="glow"><stop offset="0%" stop-color="#ff2e88" stop-opacity=".9"/><stop offset="100%" stop-color="#ff2e88" stop-opacity="0"/></radialGradient>
-      <filter id="blur"><feGaussianBlur stdDeviation="1.1"/></filter>
-    </defs>
-    <g id="countries"></g>
-    <g id="arcs"></g>
-    <g id="pings"></g>
-    <g id="target"></g>
-  </svg>
-</div>
 
-<div class="hud" id="top">
-  <div>
-    <h1>LIVE THREAT MAP <b>●</b></h1>
-    <div class="tag">Every dot is a <b>real</b> IP address currently on public malware/botnet blocklists. Geolocated to its country and replayed as incoming attacks on a sensor.</div>
-  </div>
-  <div class="stats">
-    <div class="stat"><div class="n" id="sTotal">0</div><div class="l">real IPs loaded</div></div>
-    <div class="stat"><div class="n" id="sSeen">0</div><div class="l">attacks shown</div></div>
-    <div class="stat"><div class="n" id="sLive">—</div><div class="l">IPs on feed now</div></div>
-  </div>
-</div>
+<svg id="map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid slice">
+  <g id="countries"></g>
+  <g id="arcs"></g>
+  <g id="sensor"></g>
+</svg>
 
-<div class="hud" id="feed"><h2>▌ live attack feed</h2><div id="rows"></div></div>
-<div class="hud" id="tops"><h2>▌ top origin countries</h2><div id="bars"></div></div>
-<div id="note"></div>
+<header>
+  <h1>live-threat-map</h1>
+  <p id="summary">loading…</p>
+</header>
 
-<script src="world.js"></script>
-<script src="attacks.js"></script>
-<script>
-const W=1000,H=500;
-const proj=(lat,lng)=>[ (lng+180)/360*W, (90-lat)/180*H ];
-const SVG=s=>document.getElementById(s);
-const ns="http://www.w3.org/2000/svg";
-const el=(t,a)=>{const e=document.createElementNS(ns,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+<aside id="feed">
+  <h2>recent</h2>
+  <ol id="rows"></ol>
+</aside>
 
-// --- draw countries ---
-(function(){
-  const g=SVG("countries"); let d="";
-  for(const f of window.WORLD){
-    const polys = f.t==="Polygon" ? [f.g] : f.g;
-    for(const poly of polys){
-      for(const ring of poly){
-        d+="M"+ring.map(([lng,lat])=>{const[x,y]=proj(lat,lng);return x.toFixed(1)+" "+y.toFixed(1);}).join("L")+"Z";
-      }
-    }
-  }
-  g.appendChild(el("path",{d,class:"country"}));
-})();
+<aside id="countries-panel">
+  <h2>by country</h2>
+  <table id="by-country"></table>
+</aside>
 
-// --- sensor / target node ---
-const TARGET = proj(40.7,-74.0); // a sensor location
-(function(){
-  const g=SVG("target");
-  g.appendChild(el("circle",{cx:TARGET[0],cy:TARGET[1],r:14,fill:"url(#glow)"}));
-  const c=el("circle",{cx:TARGET[0],cy:TARGET[1],r:4,fill:"#36e0ff"});
-  g.appendChild(c);
-  const ring=el("circle",{cx:TARGET[0],cy:TARGET[1],r:4,fill:"none",stroke:"#36e0ff","stroke-width":1.2});
-  g.appendChild(ring);
-  let t=0;(function pulse(){t+=0.05;const r=4+Math.abs(Math.sin(t))*16;
-    ring.setAttribute("r",r);ring.setAttribute("stroke-opacity",(1-Math.abs(Math.sin(t))).toFixed(2));
-    requestAnimationFrame(pulse);})();
-})();
+<footer id="credits"></footer>
 
-const ATTACKS=window.ATTACKS||[], META=window.ATTACK_META||{};
-SVG("sTotal").textContent=ATTACKS.length.toLocaleString();
-SVG("sLive").textContent=(META.total_feed_ips||ATTACKS.length).toLocaleString();
-SVG("note").innerHTML="Real data: malicious IPs from <b>"+(META.source_feed||"IPsum")+
-  "</b>, geolocated via <b>"+(META.source_geo||"DB-IP")+"</b>. Snapshot "+(META.generated||"")+
-  ". Dots sit at each IP&#39;s country; the animation is a visualization, not a live packet capture.";
-
-// --- top countries ---
-(function(){
-  const c={}; for(const a of ATTACKS){c[a.cc]=(c[a.cc]||0)+1;}
-  const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,7);
-  const max=top[0][1], g=SVG("bars");
-  for(const [cc,n] of top){
-    const row=document.createElement("div");row.className="bar";
-    row.innerHTML=`<span class="cc">${cc}</span><span class="track"><span class="fill" style="width:${(n/max*100).toFixed(0)}%"></span></span><span class="v">${n}</span>`;
-    g.appendChild(row);
-  }
-})();
-
-// --- attack animation ---
-const arcs=SVG("arcs"), pings=SVG("pings"), rows=SVG("rows");
-let seen=0, active=[];
-function spawn(){
-  const a=ATTACKS[Math.floor(Math.random()*ATTACKS.length)];
-  const [ox,oy]=proj(a.lat,a.lng), [tx,ty]=TARGET;
-  const mx=(ox+tx)/2, my=(oy+ty)/2 - Math.hypot(tx-ox,ty-oy)*0.35;
-  const path=el("path",{d:`M${ox} ${oy} Q${mx} ${my} ${tx} ${ty}`,fill:"none",
-    stroke:"#ff2e88","stroke-width":1,"stroke-opacity":0.55,filter:"url(#blur)"});
-  arcs.appendChild(path);
-  const len=path.getTotalLength();
-  path.style.strokeDasharray=len; path.style.strokeDashoffset=len;
-  const dot=el("circle",{r:2.4,fill:"#fff"}); pings.appendChild(dot);
-  const src=el("circle",{cx:ox,cy:oy,r:2.2,fill:"#ff2e88"}); pings.appendChild(src);
-  active.push({path,dot,src,len,t:0,done:false});
-  // feed row
-  const r=document.createElement("div");r.className="row";
-  r.innerHTML=`<span class="ip">${a.ip}</span> <span class="co">${a.country} · ${a.hits} lists</span>`;
-  rows.prepend(r); while(rows.children.length>9) rows.lastChild.remove();
-  seen++; SVG("sSeen").textContent=seen.toLocaleString();
-}
-function frame(){
-  for(const o of active){
-    if(o.done) continue;
-    o.t+=0.018;
-    const p=Math.min(o.t,1);
-    o.path.style.strokeDashoffset=o.len*(1-p);
-    const pt=o.path.getPointAtLength(o.len*p);
-    o.dot.setAttribute("cx",pt.x); o.dot.setAttribute("cy",pt.y);
-    if(p>=1){ o.done=true; o.dot.remove();
-      o.path.style.transition="opacity 1.2s"; o.path.style.opacity="0";
-      o.src.style.transition="opacity 1.2s"; o.src.style.opacity="0";
-      setTimeout(()=>{o.path.remove();o.src.remove();},1300);
-    }
-  }
-  active=active.filter(o=>!o.done || true);
-  if(active.length>600) active=active.slice(-400);
-  requestAnimationFrame(frame);
-}
-frame();
-setInterval(spawn, 380);
-for(let i=0;i<6;i++) setTimeout(spawn, i*120);
-
-// --- optional: real live heartbeat (re-fetch current feed size) ---
-fetch("https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt",{cache:"no-store"})
- .then(r=>r.ok?r.text():null).then(t=>{ if(!t)return;
-   const n=t.split("\n").filter(l=>l&&!l.startsWith("#")).length;
-   SVG("sLive").textContent=n.toLocaleString();
- }).catch(()=>{});
-</script>
+<!-- data is loaded with script tags rather than fetch() so the page also works from file:// -->
+<script src="data/world.js"></script>
+<script src="data/attacks.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
