@@ -38,8 +38,8 @@ const SENSOR = project(40.7, -74.0);
 
 function drawSensor() {
   const g = document.getElementById("sensor");
-  const ring = svg("circle", { cx: SENSOR[0], cy: SENSOR[1], r: 4, fill: "none", stroke: "#4fc3f7", "stroke-width": 1 });
-  g.append(svg("circle", { cx: SENSOR[0], cy: SENSOR[1], r: 3, fill: "#4fc3f7" }), ring);
+  const ring = svg("circle", { cx: SENSOR[0], cy: SENSOR[1], r: 4, fill: "none", stroke: "#1f2328", "stroke-width": 1 });
+  g.append(svg("circle", { cx: SENSOR[0], cy: SENSOR[1], r: 3, fill: "#1f2328" }), ring);
 
   let t = 0;
   (function pulse() {
