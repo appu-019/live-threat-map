@@ -8,17 +8,18 @@ The 1,500 most-listed IPs from [IPsum](https://github.com/stamparm/ipsum) are ge
 country level and replayed as connections to a single sensor. It's a static page with no build
 step and no dependencies.
 
-## Running
+## Getting started
 
-```
-git clone https://github.com/appu-019/live-threat-map
-cd live-threat-map
-```
+1. Clone the repo:
 
-Then open `index.html` in a browser. It also works from `file://`, since the data is loaded with
-script tags instead of `fetch()`.
+   ```
+   git clone https://github.com/appu-019/live-threat-map
+   cd live-threat-map
+   ```
 
-Or serve it with GitHub Pages (Settings → Pages → deploy from `main`, root).
+2. Open `index.html` in your browser (double-click it in File Explorer, or run `start index.html` in Git Bash on Windows).
+
+It also works offline, since the data is loaded with script tags instead of `fetch()`. To get a public link, publish the folder with GitHub Pages (Settings → Pages).
 
 ## Data
 
